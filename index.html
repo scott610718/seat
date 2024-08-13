@@ -65,10 +65,7 @@
 <body>
   <div class="container">
     <h1>南投縣全縣校長會議座位查詢</h1>
-  <!--
-    <button id="uploadBtn">輸入座位表</button>
-    <input type="file" id="fileInput" style="display: none;" accept=".xlsx, .xls, .csv">
-    -->
+
     <p class="instruction">請語音或打字輸入查詢座位</p>
     <input type="text" id="nameInput" placeholder="輸入姓名">
     <button id="voiceInputBtn">輸入語音</button>
@@ -104,13 +101,7 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
   const file = e.target.files[0];
   const reader = new FileReader();
 
-  reader.onload = function(e) {
-    const data = new Uint8Array(e.target.result);
-    workbook = XLSX.read(data, {type: 'array'});
-    alert('座位表已成功上傳！');
-  };
-
-  reader.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(1.xlsx);
 });
 
 document.getElementById('voiceInputBtn').addEventListener('click', function() {

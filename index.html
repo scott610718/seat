@@ -1,0 +1,180 @@
+<html><head><base href="https://nantouprincipals.edu.tw/"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>南投縣全縣校長會議座位查詢</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  body {
+    font-family: 'Microsoft JhengHei', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .container {
+    width: 100%;
+    max-width: 600px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  h1 {
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 20px;
+  }
+  button {
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 10px 0;
+    cursor: pointer;
+    border-radius: 5px;
+    width: 100%;
+    max-width: 200px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    box-sizing: border-box;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  #result {
+    margin-top: 20px;
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .instruction {
+    margin: 15px 0;
+    font-size: 18px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>南投縣全縣校長會議座位查詢</h1>
+    <button id="uploadBtn">輸入座位表</button>
+    <input type="file" id="fileInput" style="display: none;" accept=".xlsx, .xls, .csv">
+    <p class="instruction">請語音或打字輸入查詢座位</p>
+    <input type="text" id="nameInput" placeholder="輸入姓名">
+    <button id="voiceInputBtn">輸入語音</button>
+    <button id="confirmBtn">確認輸入</button>
+    <div id="result"></div>
+  </div>
+
+<script>
+let workbook = null;
+let recognition = null;
+
+if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'zh-TW';
+  recognition.interimResults = false;
+
+  recognition.onresult = function(event) {
+    const transcript = event.results[0][0].transcript;
+    document.getElementById('nameInput').value = transcript;
+  };
+
+  recognition.onend = function() {
+    document.getElementById('voiceInputBtn').textContent = '輸入語音';
+  };
+}
+
+document.getElementById('uploadBtn').addEventListener('click', function() {
+  document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    workbook = XLSX.read(data, {type: 'array'});
+    alert('座位表已成功上傳！');
+  };
+
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('voiceInputBtn').addEventListener('click', function() {
+  if (recognition) {
+    if (recognition.state === 'running') {
+      recognition.stop();
+      this.textContent = '輸入語音';
+    } else {
+      recognition.start();
+      this.textContent = '停止語音輸入';
+    }
+  } else {
+    alert('您的瀏覽器不支持語音辨識功能。');
+  }
+});
+
+document.getElementById('confirmBtn').addEventListener('click', function() {
+  if (recognition && recognition.state === 'running') {
+    recognition.stop();
+  }
+  searchSeat();
+});
+
+function searchSeat() {
+  const nameInput = document.getElementById('nameInput');
+  const name = nameInput.value.trim();
+  
+  if (!workbook) {
+    alert('請先上傳座位表！');
+    return;
+  }
+
+  if (name === '') {
+    alert('請輸入姓名！');
+    return;
+  }
+
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const range = XLSX.utils.decode_range(sheet['!ref']);
+
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({r: row, c: col});
+      const cell = sheet[cellAddress];
+
+      if (cell && cell.v === name) {
+        const rowNum = row + 1;
+        const colNum = col + 1;
+        const result = `第${rowNum}排第${colNum}位 【${rowNum}-${colNum}】`;
+        document.getElementById('result').textContent = result;
+        speakResult(result);
+        return;
+      }
+    }
+  }
+
+  const notFoundResult = '找不到該姓名的座位';
+  document.getElementById('result').textContent = notFoundResult;
+  speakResult(notFoundResult);
+}
+
+function speakResult(text) {
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'zh-TW';
+  speechSynthesis.speak(utterance);
+}
+</script>
+</body>
+</html>
